@@ -1,0 +1,78 @@
+# Go build and dependency files
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go workspace and module files
+vendor/
+Gopkg.lock
+Gopkg.toml
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+
+# Cache
+__pycache__/
+.cache/
+*.pyc
+
+# Node/npm (if present)
+node_modules/
+
+# Redis dump
+*.rdb
+
+# Coverage reports
+coverage/
+*.coverprofile
+*.lcov
+
+# Test output
+*.testresult
+
+# Misc
+*.tgz
+*.tar.gz
+*.zip
+*.7z
+*.gz
+*.rar
+
+# Ignore build artifacts
+/build/
+/dist/
+
+# Ignore database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Ignore generated docs
+/docs/
+
+# Ignore backup files
+*~
+
+# Ignore marketplace image cache
+image_cache/
