@@ -3,24 +3,44 @@ package marketplaceservices
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"strings"
 )
 
-// NewEngineV2Service creates a new EngineV2Service instance with configuration from environment variables
+// BuyFromListingRequest represents the request to buy a token from a direct listing
+type BuyFromListingRequest struct {
+	ListingID string `json:"listingId"`
+	Quantity  string `json:"quantity"`
+	Buyer     string `json:"buyer"`
+}
+
+// BuyFromListingResponse represents the response from buying a token
+type BuyFromListingResponse struct {
+	Receipt json.RawMessage `json:"receipt"`
+}
+
+// CurrencyValuePerToken represents the token currency information and value
+type CurrencyValuePerToken struct {
+	Name         string `json:"name"`
+	Symbol       string `json:"symbol"`
+	Decimals     int    `json:"decimals"`
+	Value        string `json:"value"`
+	DisplayValue string `json:"displayValue"`
+}
 
 // DirectListing represents a single direct listing in the marketplace
 type DirectListing struct {
-	ID                      string        `json:"id"`
-	AssetContractAddress    string        `json:"assetContractAddress"`
-	TokenID                 string        `json:"tokenId"`
-	Seller                  string        `json:"seller"`
-	PricePerToken           string        `json:"pricePerToken"`
-	CurrencyContractAddress string        `json:"currencyContractAddress"`
-	Quantity                string        `json:"quantity"`
-	StartTimestamp          big.Int       `json:"startTimestamp"`
-	EndTimestamp            big.Int       `json:"endTimestamp"`
-	Status                  ListingStatus `json:"status"`
+	ID                      string                 `json:"id"`
+	AssetContractAddress    string                 `json:"assetContractAddress"`
+	TokenID                 string                 `json:"tokenId"`
+	Seller                  string                 `json:"seller,omitempty"`
+	PricePerToken           string                 `json:"pricePerToken"`
+	CurrencyContractAddress string                 `json:"currencyContractAddress"`
+	Quantity                string                 `json:"quantity"`
+	IsReservedListing       bool                   `json:"isReservedListing"`
+	CurrencyValuePerToken   *CurrencyValuePerToken `json:"currencyValuePerToken"`
+	StartTimeInSeconds      int64                  `json:"startTimeInSeconds"`
+	EndTimeInSeconds        int64                  `json:"endTimeInSeconds"`
+	Status                  ListingStatus          `json:"status"`
 }
 
 type FarmPlotDirectListing struct {
