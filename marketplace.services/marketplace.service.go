@@ -73,9 +73,12 @@ func FeaturedProperty(token string) (*FarmPlotDirectListingsWithImageByte, error
 
 // BuyFromListing purchases a token from a direct listing
 func BuyFromListing(token string, req *BuyFromListingRequest) (*BuyFromListingResponse, error) {
+	var buyerAddress string
+
 	// Check for dev bypass token first
 	if token == "dev_bypass_authorized" {
 		fmt.Println("Dev bypass detected in marketplace service")
+		buyerAddress = "dev_bypass_wallet"
 	} else {
 		// Verify user's token
 		walletAddr, err := tokenServices.NewTokenService().VerifyAccessToken(token)
@@ -84,6 +87,7 @@ func BuyFromListing(token string, req *BuyFromListingRequest) (*BuyFromListingRe
 		}
 		// Set the buyer to the authenticated wallet address
 		req.Buyer = walletAddr
+		buyerAddress = walletAddr
 	}
 
 	// Marshal the request body
@@ -108,7 +112,7 @@ func BuyFromListing(token string, req *BuyFromListingRequest) (*BuyFromListingRe
 	// Set headers
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+os.Getenv("SECRET_KEY"))
-	httpReq.Header.Set("X-Backend-Wallet-Address", config.AdminWallet)
+	httpReq.Header.Set("X-Backend-Wallet-Address", buyerAddress)
 
 	// Send the request
 	client := &http.Client{}
