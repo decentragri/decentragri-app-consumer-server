@@ -14,8 +14,16 @@ type BuyFromListingRequest struct {
 }
 
 // BuyFromListingResponse represents the response from buying a token
+// EngineResponse represents the standard response structure from Thirdweb engine
+type EngineResponse struct {
+	Result struct {
+		ID      string `json:"id"`
+		QueueID string `json:"queueId"`
+	} `json:"result"`
+}
+
 type BuyFromListingResponse struct {
-	Receipt json.RawMessage `json:"receipt"`
+	Message string `json:"message"`
 }
 
 // CurrencyValuePerToken represents the token currency information and value
@@ -29,18 +37,19 @@ type CurrencyValuePerToken struct {
 
 // DirectListing represents a single direct listing in the marketplace
 type DirectListing struct {
-	ID                      string                 `json:"id"`
-	AssetContractAddress    string                 `json:"assetContractAddress"`
-	TokenID                 string                 `json:"tokenId"`
-	Seller                  string                 `json:"seller,omitempty"`
-	PricePerToken           string                 `json:"pricePerToken"`
-	CurrencyContractAddress string                 `json:"currencyContractAddress"`
-	Quantity                string                 `json:"quantity"`
-	IsReservedListing       bool                   `json:"isReservedListing"`
-	CurrencyValuePerToken   *CurrencyValuePerToken `json:"currencyValuePerToken"`
-	StartTimeInSeconds      int64                  `json:"startTimeInSeconds"`
-	EndTimeInSeconds        int64                  `json:"endTimeInSeconds"`
-	Status                  ListingStatus          `json:"status"`
+	ID                         string                 `json:"id"`
+	MarketPlaceContractAddress string                 `json:"marketplaceContractAddress"`
+	AssetContractAddress       string                 `json:"assetContractAddress"`
+	TokenID                    string                 `json:"tokenId"`
+	Seller                     string                 `json:"seller,omitempty"`
+	PricePerToken              string                 `json:"pricePerToken"`
+	CurrencyContractAddress    string                 `json:"currencyContractAddress"`
+	Quantity                   string                 `json:"quantity"`
+	IsReservedListing          bool                   `json:"isReservedListing"`
+	CurrencyValuePerToken      *CurrencyValuePerToken `json:"currencyValuePerToken"`
+	StartTimeInSeconds         int64                  `json:"startTimeInSeconds"`
+	EndTimeInSeconds           int64                  `json:"endTimeInSeconds"`
+	Status                     ListingStatus          `json:"status"`
 }
 
 type FarmPlotDirectListing struct {

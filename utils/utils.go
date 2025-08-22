@@ -18,6 +18,41 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type TransactionStatusResult struct {
+	Result *TransactionStatus `json:"result"`
+	Error  *struct {
+		Message string `json:"message"`
+	} `json:"error"`
+}
+
+// TransactionStatus represents the detailed status of a transaction
+type TransactionStatus struct {
+	QueueId                 string `json:"queueId"`
+	WalletAddress           string `json:"walletAddress"`
+	ContractAddress         string `json:"contractAddress"`
+	ChainId                 string `json:"chainId"`
+	Extension               string `json:"extension"`
+	Status                  string `json:"status"`
+	EncodedInputData        string `json:"encodedInputData"`
+	TxType                  int    `json:"txType"`
+	GasPrice                string `json:"gasPrice"`
+	GasLimit                string `json:"gasLimit"`
+	MaxPriorityFeePerGas    string `json:"maxPriorityFeePerGas"`
+	MaxFeePerGas            string `json:"maxFeePerGas"`
+	TxHash                  string `json:"txHash"`
+	SubmittedTxNonce        int    `json:"submittedTxNonce"`
+	CreatedTimestamp        string `json:"createdTimestamp"`
+	TxProcessedTimestamp    string `json:"txProcessedTimestamp"`
+	TxSubmittedTimestamp    string `json:"txSubmittedTimestamp"`
+	DeployedContractAddress string `json:"deployedContractAddress"`
+	ContractType            string `json:"contractType"`
+	ErrorMessage            string `json:"errorMessage"`
+	TxMinedTimestamp        string `json:"txMinedTimestamp"`
+	BlockNumber             int64  `json:"blockNumber"`
+	OnChainTxStatus         int    `json:"onChainTxStatus"`
+}
+
+
 // GetEnv loads environment variables from a .env file and retrieves the value of the specified environment variable.
 // If the .env file cannot be loaded, the function logs a fatal error and terminates the program.
 // The function returns the value of the environment variable corresponding to envName.
@@ -145,4 +180,34 @@ func UploadPicBuffer(ctx context.Context, buffer []byte, fileName string) (strin
 		return "", fmt.Errorf("no IpfsHash returned from upload")
 	}
 	return "ipfs://" + result.IpfsHash + "/" + fileName, nil
+}
+
+
+// EnsureTransactionMined checks the status of a transaction by queueId using Fiber HTTP client
+func EnsureTransactionMined(queueId string) (*TransactionStatus, error) {
+	url := os.Getenv("ENGINE_URI") + "/transaction/status/" + queueId
+	req := fiber.Get(url)
+	req.Set("Authorization", "Bearer "+os.Getenv("ENGINE_ACCESS_TOKEN"))
+	status, body, errs := req.Bytes()
+	if len(errs) > 0 {
+		return nil, errs[0]
+	}
+	if status < 200 || status >= 300 {
+		return nil, fmt.Errorf("engine transaction status failed: %s", string(body))
+	}
+
+	var result TransactionStatusResult
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse transaction status response: %w", err)
+	}
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("transaction status error: %s", result.Error.Message)
+	}
+
+	if result.Result == nil {
+		return nil, fmt.Errorf("no transaction status data in response")
+	}
+
+	return result.Result, nil
 }

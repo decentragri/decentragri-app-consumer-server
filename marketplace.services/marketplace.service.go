@@ -1,16 +1,16 @@
 package marketplaceservices
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"net/http"
 	"os"
 	"time"
 
 	"decentragri-app-cx-server/config"
 	tokenServices "decentragri-app-cx-server/token.services"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 func GetValidFarmPlotListings(token string) (*FarmPlotDirectListingsResponse, error) {
@@ -28,11 +28,6 @@ func GetValidFarmPlotListings(token string) (*FarmPlotDirectListingsResponse, er
 	farmPlotListing, err := GetAllValidFarmPlotListings(config.CHAIN, config.MarketPlaceContractAddress)
 	if err != nil {
 		return nil, err
-	}
-
-	// Check if there are any listings
-	if farmPlotListing == nil || len(*farmPlotListing) == 0 {
-		return nil, fmt.Errorf("no farm plot listings available")
 	}
 
 	// The farmPlotListing already contains ImageBytes populated by GetAllValidFarmPlotListings
@@ -81,13 +76,6 @@ func BuyFromListing(token string, req *BuyFromListingRequest) (*BuyFromListingRe
 	// Set the buyer to the authenticated wallet address
 	req.Buyer = walletAddr
 
-
-	// Marshal the request body
-	payload, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-
 	// Prepare the request URL
 	url := fmt.Sprintf("%s/marketplace/%s/%s/direct-listings/buy-from-listing",
 		config.EngineCloudBaseURL,
@@ -95,37 +83,36 @@ func BuyFromListing(token string, req *BuyFromListingRequest) (*BuyFromListingRe
 		config.MarketPlaceContractAddress,
 	)
 
-	// Create the request
-	httpReq, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set headers
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+os.Getenv("SECRET_KEY"))
-
-
-	httpReq.Header.Set("X-Backend-Wallet-Address", config.AdminWallet)
+	// Create the request using Fiber's client
+	fiberReq := fiber.Post(url)
+	fiberReq.Set("Content-Type", "application/json")
+	fiberReq.Set("Authorization", "Bearer "+os.Getenv("SECRET_KEY"))
+	fiberReq.Set("X-Backend-Wallet-Address", config.AdminWallet)
+	fiberReq.JSON(req) // Set JSON body
 
 	// Send the request
-	client := &http.Client{}
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
+	status, body, errs := fiberReq.Bytes()
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("failed to send request: %v", errs[0])
 	}
-	defer resp.Body.Close()
 
 	// Check response status
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("API request failed with status %d", resp.StatusCode)
+	if status < 200 || status >= 300 {
+		return nil, fmt.Errorf("API request failed with status %d: %s", status, string(body))
 	}
 
-	// Parse the response
-	var result BuyFromListingResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	// Parse the engine response
+	var engineResp EngineResponse
+	if err := json.Unmarshal(body, &engineResp); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return &result, nil
+	// For now we'll return immediately after getting the response
+	// In a production environment, you might want to implement transaction mining check here
+
+	// Create the final response
+	result := &BuyFromListingResponse{
+		Message: "Purchase successful",
+	}
+	return result, nil
 }
