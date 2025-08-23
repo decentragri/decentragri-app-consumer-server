@@ -212,7 +212,7 @@ func (fpm *FarmPlotMetadata) UnmarshalJSON(data []byte) error {
 			}
 		}
 
-		// If we can't parse attributes properly, check properties field
+
 		if fpm.Properties != nil {
 			farmPlotAttr := FarmPlotAttributes{}
 			if v, ok := fpm.Properties["id"].(string); ok {
