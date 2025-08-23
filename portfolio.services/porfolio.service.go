@@ -11,7 +11,8 @@ import (
 )
 
 type PortfolioSummary struct {
-	FarmPlotNFTCount int `json:"farmPlotNFTCount"`
+	FarmPlotNFTCount int                        `json:"farmPlotNFTCount"`
+	FarmPlotNFTs     walletServices.NFTResponse `json:"farmPlotNFTs"`
 }
 
 func GetPortFolioSummary(token string) (PortfolioSummary, error) {
@@ -52,6 +53,7 @@ func GetPortFolioSummary(token string) (PortfolioSummary, error) {
 
 	summary := PortfolioSummary{
 		FarmPlotNFTCount: farmPlotNFTCount,
+		FarmPlotNFTs:     farmPlotNFTs,
 	}
 
 	// Cache the portfolio summary for 3 minutes

@@ -58,9 +58,40 @@ func (ws *WalletService) CreateWallet() (*CreateWalletResponse, error) {
 
 // GetBalance fetches native token balance using Fiber client
 func GetBalance(chainID, walletAddress string) (BalanceResponse, error) {
-	url := fmt.Sprintf("%s/backend-wallet/%s/get-balance?walletAddress=%s",
+	url := fmt.Sprintf("%s/backend-wallet/%s/%s/get-balance",
 		config.EngineCloudBaseURL,
 		chainID,
+		walletAddress,
+	)
+
+	// Create the request using Fiber's client
+	req := fiber.Get(url)
+	req.Set("Authorization", "Bearer "+os.Getenv("SECRET_KEY"))
+
+	// Send the request
+	status, body, errs := req.Bytes()
+	if len(errs) > 0 {
+		return BalanceResponse{}, fmt.Errorf("failed to make request: %v", errs[0])
+	}
+
+	if status < 200 || status >= 300 {
+		return BalanceResponse{}, fmt.Errorf("API request failed with status %d: %s", status, string(body))
+	}
+
+	var balanceResp BalanceResponse
+	if err := json.Unmarshal(body, &balanceResp); err != nil {
+		return BalanceResponse{}, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return balanceResp, nil
+}
+
+// GetERC20Balance fetches ERC20 token balance using Fiber client
+func GetERC20Balance(chainID, contractAddress, walletAddress string) (BalanceResponse, error) {
+	url := fmt.Sprintf("%s/contract/%s/%s/erc20/balance-of?wallet_address=%s",
+		config.EngineCloudBaseURL,
+		chainID,
+		contractAddress,
 		walletAddress,
 	)
 
@@ -146,10 +177,30 @@ func (ws *WalletService) GetUserBalances(token string) (*UserBalances, error) {
 		nativePrice = 0 // Set price to 0 if unable to fetch
 	}
 
-	// Calculate USD value
-	rawBalance := nativeBalance.Result.Value
-	balanceFloat, _ := strconv.ParseFloat(rawBalance, 64)
-	valueUSD := balanceFloat * nativePrice
+	// Calculate USD value for native token using display value
+	nativeBalanceFloat, _ := strconv.ParseFloat(nativeBalance.Result.DisplayValue, 64)
+	nativeValueUSD := nativeBalanceFloat * nativePrice
+
+	// Get DAGRI token balance
+	dagriBalance, err := GetERC20Balance(chainID, config.DAGRIContractAddress, username)
+	if err != nil {
+		// If DAGRI balance fetch fails, set to zero but don't fail the entire request
+		dagriBalance = BalanceResponse{
+			Result: struct {
+				DisplayValue string `json:"displayValue"`
+				Value        string `json:"value"`
+			}{
+				DisplayValue: "0",
+				Value:        "0",
+			},
+		}
+	}
+
+	// Calculate USD value for DAGRI token using display value
+	// For now, DAGRI price is 0, but the structure is ready for when price is available
+	dagriBalanceFloat, _ := strconv.ParseFloat(dagriBalance.Result.DisplayValue, 64)
+	dagriPriceUSD := 0.0 // Set to 0 for now since DAGRI is not listed yet
+	dagriValueUSD := dagriBalanceFloat * dagriPriceUSD
 
 	// Create response
 	result := &UserBalances{
@@ -158,7 +209,13 @@ func (ws *WalletService) GetUserBalances(token string) (*UserBalances, error) {
 			Balance:    nativeBalance.Result.DisplayValue,
 			RawBalance: nativeBalance.Result.Value,
 			PriceUSD:   nativePrice,
-			ValueUSD:   valueUSD,
+			ValueUSD:   nativeValueUSD,
+		},
+		DAGRI: TokenBalance{
+			Balance:    dagriBalance.Result.DisplayValue,
+			RawBalance: dagriBalance.Result.Value,
+			PriceUSD:   dagriPriceUSD,
+			ValueUSD:   dagriValueUSD,
 		},
 		LastUpdated: time.Now().Unix(),
 	}
@@ -202,3 +259,5 @@ func (ws *WalletService) GetOwnedNFTs(contractAddress, token string) (NFTRespons
 
 	return nftResp, nil
 }
+
+

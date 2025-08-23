@@ -32,6 +32,7 @@ func main() {
 	routes.AuthRoutes(app)
 	routes.PortfolioRoutes(app)
 	routes.MarketplaceRoutes(app)
+	routes.WalletRoutes(app)
 
 	if err := app.Listen(":9085"); err != nil {
 		panic(err)

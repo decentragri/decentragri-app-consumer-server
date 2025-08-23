@@ -12,6 +12,7 @@ type TokenBalance struct {
 type UserBalances struct {
 	WalletAddress string       `json:"walletAddress"`
 	Native        TokenBalance `json:"native"`      // Native token (ETH) balance and price
+	DAGRI         TokenBalance `json:"dagri"`       // DAGRI token balance (no price yet)
 	LastUpdated   int64        `json:"lastUpdated"` // Unix timestamp of last update
 }
 
@@ -37,15 +38,27 @@ type NFTResponse struct {
 
 // NFTItem represents a single NFT item
 type NFTItem struct {
-	Metadata NFTMetadata `json:"metadata"`
-	Owner    string      `json:"owner"`
-	Type     string      `json:"type"` // "ERC1155", "ERC721", or "metaplex"
+	Metadata      NFTMetadata `json:"metadata"`
+	Owner         string      `json:"owner"`
+	Type          string      `json:"type"`          // "ERC1155", "ERC721", or "metaplex"
+	Supply        string      `json:"supply"`        // Total supply of the NFT
+	QuantityOwned string      `json:"quantityOwned"` // Quantity owned by the user
+}
+
+// NFTAttribute represents an NFT attribute
+type NFTAttribute struct {
+	TraitType string `json:"trait_type"`
+	Value     string `json:"value"`
 }
 
 // NFTMetadata represents the metadata of an NFT
 type NFTMetadata struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID          string         `json:"id"`
+	URI         string         `json:"uri"`
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	ExternalURL string         `json:"external_url"`
+	Attributes  []NFTAttribute `json:"attributes"`
 }
 
 // CreateWalletRequest represents the request to create a new wallet
