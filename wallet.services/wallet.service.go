@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	tokenServices "decentragri-app-cx-server/token.services"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -29,13 +31,13 @@ func (ws *WalletService) CreateWallet() (*CreateWalletResponse, error) {
 		Type: "smart:local",
 	}
 
-	req := fiber.Post(url)
-	req.Set("Content-Type", "application/json")
-	req.Set("Authorization", fmt.Sprintf("Bearer %s", ws.secretKey))
 	bodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("error marshalling request: %v", err)
 	}
+	req := fiber.Post(url)
+	req.Set("Content-Type", "application/json")
+	req.Set("Authorization", fmt.Sprintf("Bearer %s", ws.secretKey))
 	req.Body(bodyBytes)
 
 	status, body, errs := req.Bytes()
@@ -120,15 +122,20 @@ func GetTokenPriceUSD(chainID int, tokenAddress string) (float64, error) {
 
 // GetUserBalances fetches comprehensive balance information for a user
 // including native token balance and price
-func (ws *WalletService) GetUserBalances(chainID string, walletAddress string) (*UserBalances, error) {
-	// Convert chain ID for price fetching
+func (ws *WalletService) GetUserBalances(token string) (*UserBalances, error) {
+	tokenService := tokenServices.NewTokenService()
+	username, err := tokenService.VerifyAccessToken(token)
+	if err != nil {
+		return nil, fmt.Errorf("invalid or expired token: %w", err)
+	}
+	chainID := config.CHAIN // hardcoded chain ID from config
 	chainInt, err := strconv.Atoi(chainID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid chain ID: %w", err)
 	}
 
 	// Get native token balance
-	nativeBalance, err := GetBalance(chainID, walletAddress)
+	nativeBalance, err := GetBalance(chainID, username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch native balance: %w", err)
 	}
@@ -146,7 +153,7 @@ func (ws *WalletService) GetUserBalances(chainID string, walletAddress string) (
 
 	// Create response
 	result := &UserBalances{
-		WalletAddress: walletAddress,
+		WalletAddress: username,
 		Native: TokenBalance{
 			Balance:    nativeBalance.Result.DisplayValue,
 			RawBalance: nativeBalance.Result.Value,
@@ -160,12 +167,17 @@ func (ws *WalletService) GetUserBalances(chainID string, walletAddress string) (
 }
 
 // GetOwnedNFTs fetches owned NFTs from a specific contract using Fiber client
-func (ws *WalletService) GetOwnedNFTs(chainID, contractAddress, walletAddress string) (NFTResponse, error) {
+func (ws *WalletService) GetOwnedNFTs(contractAddress, token string) (NFTResponse, error) {
+	tokenService := tokenServices.NewTokenService()
+	username, err := tokenService.VerifyAccessToken(token)
+	if err != nil {
+		return NFTResponse{}, fmt.Errorf("invalid or expired token: %w", err)
+	}
 	url := fmt.Sprintf("%s/contract/%s/%s/erc1155/get-owned?walletAddress=%s",
 		config.EngineCloudBaseURL,
-		chainID,
+		config.CHAIN,
 		contractAddress,
-		walletAddress,
+		username,
 	)
 	println("Fetching NFTs from URL:", url)
 
