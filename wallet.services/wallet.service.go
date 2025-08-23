@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -14,7 +15,7 @@ import (
 )
 
 // GetTokenPriceUSD fetches token price using Fiber client
-func (is *InsightService) GetTokenPriceUSD(chainID int, tokenAddress string) (float64, error) {
+func GetTokenPriceUSD(chainID int, tokenAddress string) (float64, error) {
 	if tokenAddress == "" {
 		tokenAddress = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" // Native token
 	}
@@ -35,7 +36,7 @@ func (is *InsightService) GetTokenPriceUSD(chainID int, tokenAddress string) (fl
 
 	// Use Fiber's client instead of net/http
 	req := fiber.Get(url)
-	req.Set("x-secret-key", is.secretKey)
+	req.Set("x-secret-key", os.Getenv("SECRET_KEY"))
 
 	status, body, errs := req.Bytes()
 	if len(errs) > 0 {
@@ -64,8 +65,8 @@ func (is *InsightService) GetTokenPriceUSD(chainID int, tokenAddress string) (fl
 }
 
 // SafeGetPrice safely gets token price, returns 0 on error
-func (is *InsightService) SafeGetPrice(chainID int, tokenAddress string) float64 {
-	price, err := is.GetTokenPriceUSD(chainID, tokenAddress)
+func SafeGetPrice(chainID int, tokenAddress string) float64 {
+	price, err := GetTokenPriceUSD(chainID, tokenAddress)
 	if err != nil {
 		fmt.Printf("Failed to fetch price for %s on chain %d: %v\n", tokenAddress, chainID, err)
 		return 0
@@ -74,12 +75,12 @@ func (is *InsightService) SafeGetPrice(chainID int, tokenAddress string) float64
 }
 
 // GetBalance fetches native token balance using Fiber client
-func (ws *WalletService) GetBalance(chainID, walletAddress string) (BalanceResponse, error) {
+func GetBalance(chainID, walletAddress string) (BalanceResponse, error) {
 	url := fmt.Sprintf("%s/backend-wallet/%s/get-balance?walletAddress=%s", config.EngineCloudBaseURL, chainID, walletAddress)
 
 	// Use Fiber's client instead of net/http
 	req := fiber.Get(url)
-	req.Set("x-secret-key", ws.secretKey)
+	req.Set("x-secret-key", os.Getenv("SECRET_KEY"))
 
 	status, body, errs := req.Bytes()
 	if len(errs) > 0 {
@@ -99,12 +100,12 @@ func (ws *WalletService) GetBalance(chainID, walletAddress string) (BalanceRespo
 }
 
 // GetERC20Balance fetches ERC20 token balance using Fiber client
-func (ws *WalletService) GetERC20Balance(chainID, walletAddress, tokenAddress string) (BalanceResponse, error) {
+func GetERC20Balance(chainID, walletAddress, tokenAddress string) (BalanceResponse, error) {
 	url := fmt.Sprintf("%s/contract/%s/%s/erc20/balance-of?walletAddress=%s", config.EngineCloudBaseURL, chainID, tokenAddress, walletAddress)
 
 	// Use Fiber's client instead of net/http
 	req := fiber.Get(url)
-	req.Set("x-secret-key", ws.secretKey)
+	req.Set("x-secret-key", os.Getenv("SECRET_KEY"))
 
 	status, body, errs := req.Bytes()
 	if len(errs) > 0 {
@@ -124,11 +125,11 @@ func (ws *WalletService) GetERC20Balance(chainID, walletAddress, tokenAddress st
 }
 
 // GetWalletBalance fetches wallet balance and price data using Fiber client
-func (ws *WalletService) GetWalletBalance(walletAddress string) (WalletData, error) {
-	insightService := NewInsightService()
+func GetWalletBalance(walletAddress string) (WalletData, error) {
+
 
 	// Convert CHAIN to int for price calls
-	chainInt, err := strconv.Atoi(CHAIN)
+	chainInt, err := strconv.Atoi(config.CHAIN)
 	if err != nil {
 		return WalletData{}, fmt.Errorf("invalid chain ID: %w", err)
 	}
@@ -140,12 +141,12 @@ func (ws *WalletService) GetWalletBalance(walletAddress string) (WalletData, err
 	// Results storage
 	var (
 		ethToken    BalanceResponse
-		swellToken  BalanceResponse
+		// swellToken  BalanceResponse
 		dagriToken  BalanceResponse
-		rsWETH      BalanceResponse
+		// rsWETH      BalanceResponse
 		dagriPrice  float64
 		ethPrice    float64
-		swellPrice  float64
+		// swellPrice  float64
 		fetchErrors []error
 	)
 
@@ -164,27 +165,27 @@ func (ws *WalletService) GetWalletBalance(walletAddress string) (WalletData, err
 	// ETH balance
 	go func() {
 		defer wg.Done()
-		balance, err := ws.GetBalance("1", walletAddress)
+		balance, err := GetBalance(config.CHAIN, walletAddress)
 		mu.Lock()
 		ethToken = balance
 		mu.Unlock()
 		addError(err)
 	}()
 
-	// Swell balance
-	go func() {
-		defer wg.Done()
-		balance, err := ws.GetBalance(CHAIN, walletAddress)
-		mu.Lock()
-		swellToken = balance
-		mu.Unlock()
-		addError(err)
-	}()
+	// // Swell balance
+	// go func() {
+	// 	defer wg.Done()
+	// 	balance, err := GetBalance(config.CHAIN, walletAddress)
+	// 	mu.Lock()
+	// 	swellToken = balance
+	// 	mu.Unlock()
+	// 	addError(err)
+	// }()
 
 	// DAGRI token balance
 	go func() {
 		defer wg.Done()
-		balance, err := ws.GetERC20Balance(CHAIN, walletAddress, DECENTRAGRI_TOKEN)
+		balance, err := GetERC20Balance(config.CHAIN, walletAddress, config.DAGRIContractAddress)
 		mu.Lock()
 		dagriToken = balance
 		mu.Unlock()
@@ -192,19 +193,19 @@ func (ws *WalletService) GetWalletBalance(walletAddress string) (WalletData, err
 	}()
 
 	// rsWETH balance
-	go func() {
-		defer wg.Done()
-		balance, err := ws.GetERC20Balance("1", walletAddress, RSWETH_ADDRESS)
-		mu.Lock()
-		rsWETH = balance
-		mu.Unlock()
-		addError(err)
-	}()
+	// go func() {
+	// 	defer wg.Done()
+	// 	balance, err := GetERC20Balance("1", walletAddress, RSWETH_ADDRESS)
+	// 	mu.Lock()
+	// 	rsWETH = balance
+	// 	mu.Unlock()
+	// 	addError(err)
+	// }()
 
 	// DAGRI price
 	go func() {
 		defer wg.Done()
-		price := insightService.SafeGetPrice(chainInt, DECENTRAGRI_TOKEN)
+		price := SafeGetPrice(chainInt, config.DAGRIContractAddress)
 		mu.Lock()
 		dagriPrice = price
 		mu.Unlock()
@@ -213,20 +214,27 @@ func (ws *WalletService) GetWalletBalance(walletAddress string) (WalletData, err
 	// ETH price
 	go func() {
 		defer wg.Done()
-		price := insightService.SafeGetPrice(1, "")
+		price := SafeGetPrice(chainInt, "")
 		mu.Lock()
 		ethPrice = price
 		mu.Unlock()
 	}()
 
-	// SWELL price
-	go func() {
-		defer wg.Done()
-		price := insightService.SafeGetPrice(1, "0x0a6E7Ba5042B38349e437ec6Db6214AEC7B35676")
-		mu.Lock()
-		swellPrice = price
-		mu.Unlock()
-	}()
+	// // SWELL price
+	// go func() {
+	// 	defer wg.Done()
+	// 	chainInt2, err := strconv.Atoi(config.CHAIN)
+	// 	if err != nil {
+	// 		mu.Lock()
+	// 		swellPrice = 0
+	// 		mu.Unlock()
+	// 	} else {
+	// 		p := SafeGetPrice(chainInt2, "0x0a6E7Ba5042B38349e437ec6Db6214AEC7B35676")
+	// 		mu.Lock()
+	// 		swellPrice = p
+	// 		mu.Unlock()
+	// 	}
+	// }()
 
 	// Wait for all goroutines to complete
 	wg.Wait()
@@ -241,15 +249,15 @@ func (ws *WalletService) GetWalletBalance(walletAddress string) (WalletData, err
 
 		// Balances
 		EthBalance:    ethToken.Result.DisplayValue,
-		SwellBalance:  swellToken.Result.DisplayValue,
-		RsWETHBalance: rsWETH.Result.DisplayValue,
+		// SwellBalance:  swellToken.Result.DisplayValue,
+		// RsWETHBalance: rsWETH.Result.DisplayValue,
 		DagriBalance:  dagriToken.Result.DisplayValue,
-		NativeBalance: swellToken.Result.DisplayValue,
+		// NativeBalance: swellToken.Result.DisplayValue,
 
 		// Prices
 		DagriPriceUSD: dagriPrice,
 		EthPriceUSD:   ethPrice,
-		SwellPriceUSD: swellPrice,
+		// SwellPriceUSD: swellPrice,
 	}, nil
 }
 

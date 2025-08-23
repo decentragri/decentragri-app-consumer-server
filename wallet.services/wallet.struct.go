@@ -4,11 +4,7 @@ import (
 	"os"
 )
 
-const (
-	CHAIN             = "167009" // Swell mainnet
-	DECENTRAGRI_TOKEN = "0x..."  // Replace with actual token address
-	RSWETH_ADDRESS    = "0x0a6E7Ba5042B38349e437ec6Db6214AEC7B35676"
-)
+
 
 // WalletData represents the wallet balance and price data
 type WalletData struct {
@@ -85,14 +81,3 @@ func NewWalletService() *WalletService {
 	}
 }
 
-// InsightService handles token price fetching
-type InsightService struct {
-	secretKey string
-}
-
-// NewInsightService creates a new insight service instance
-func NewInsightService() *InsightService {
-	return &InsightService{
-		secretKey: os.Getenv("SECRET_KEY"),
-	}
-}
