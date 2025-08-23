@@ -42,7 +42,7 @@ func GetPortFolioSummary(token string) (PortfolioSummary, error) {
 		}
 	}
 
-	farmPlotNFTs, err := walletServices.NewWalletService().GetOwnedNFTs(config.CHAIN, config.FarmPlotContractAddress, username)
+	farmPlotNFTs, err := walletServices.GetOwnedNFTs(config.CHAIN, config.FarmPlotContractAddress, username)
 	if err != nil {
 		return PortfolioSummary{}, err
 	}

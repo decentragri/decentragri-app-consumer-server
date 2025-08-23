@@ -262,13 +262,13 @@ func GetWalletBalance(walletAddress string) (WalletData, error) {
 }
 
 // GetOwnedNFTs fetches owned NFTs from a specific contract using Fiber client
-func (ws *WalletService) GetOwnedNFTs(chainID, contractAddress, walletAddress string) (NFTResponse, error) {
+func GetOwnedNFTs(chainID, contractAddress, walletAddress string) (NFTResponse, error) {
 	url := fmt.Sprintf("%s/contract/%s/%s/erc1155/get-owned?walletAddress=%s", config.EngineCloudBaseURL, chainID, contractAddress, walletAddress)
 	println("Fetching NFTs from URL:", url)
 	// Use Fiber's client instead of net/http
 	req := fiber.Get(url)
-	req.Set("x-secret-key", ws.secretKey)
-	req.Set("Authorization", "Bearer "+ws.secretKey)
+	req.Set("x-secret-key", os.Getenv("SECRET_KEY"))
+	req.Set("Authorization", "Bearer "+os.Getenv("SECRET_KEY"))
 
 	status, body, errs := req.Bytes()
 	if len(errs) > 0 {
