@@ -28,4 +28,16 @@ func PortfolioRoutes(app *fiber.App) {
 
 		return c.JSON(response)
 	})
+
+
+	portfolioGroup.Get("/entire", func(c *fiber.Ctx) error {
+		token := middleware.ExtractToken(c)
+
+		response, err := portfolioservices.GetEntirePortfolio(token)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		return c.JSON(response)
+	})
 }

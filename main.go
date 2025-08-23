@@ -5,12 +5,15 @@ import (
 	memgraph "decentragri-app-cx-server/db"
 	"decentragri-app-cx-server/routes"
 	"log"
+	"runtime"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 )
 
 func main() {
+	log.Printf("Server configured to use %d CPU cores", runtime.NumCPU())
+
 	// Load environment variables from .env file
 	if err := godotenv.Load(); err != nil {
 		log.Println("Warning: Could not load .env file:", err)
