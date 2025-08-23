@@ -1,26 +1,18 @@
 package walletservices
 
-import (
-	"os"
-)
+// TokenBalance represents the balance and price information for a token
+type TokenBalance struct {
+	Balance    string  `json:"balance"`    // Display value of the balance
+	RawBalance string  `json:"rawBalance"` // Raw value of the balance
+	PriceUSD   float64 `json:"priceUSD"`   // Current price in USD
+	ValueUSD   float64 `json:"valueUSD"`   // Total value in USD (balance * price)
+}
 
-
-
-// WalletData represents the wallet balance and price data
-type WalletData struct {
-	SmartWalletAddress string `json:"smartWalletAddress"`
-
-	// Balances
-	EthBalance    string `json:"ethBalance"`
-	SwellBalance  string `json:"swellBalance"`
-	RsWETHBalance string `json:"rsWETHBalance"`
-	DagriBalance  string `json:"dagriBalance"`
-	NativeBalance string `json:"nativeBalance"`
-
-	// Prices
-	DagriPriceUSD float64 `json:"dagriPriceUSD"`
-	EthPriceUSD   float64 `json:"ethPriceUSD"`
-	SwellPriceUSD float64 `json:"swellPriceUSD"`
+// UserBalances represents comprehensive balance information for a user
+type UserBalances struct {
+	WalletAddress string       `json:"walletAddress"`
+	Native        TokenBalance `json:"native"`      // Native token (ETH) balance and price
+	LastUpdated   int64        `json:"lastUpdated"` // Unix timestamp of last update
 }
 
 // BalanceResponse represents the response from thirdweb balance API
@@ -45,39 +37,13 @@ type NFTResponse struct {
 
 // NFTItem represents a single NFT item
 type NFTItem struct {
-	Metadata      NFTMetadata `json:"metadata"`
-	Owner         string      `json:"owner"`
-	Type          string      `json:"type"` // "ERC1155", "ERC721", or "metaplex"
-	Supply        string      `json:"supply"`
-	QuantityOwned string      `json:"quantityOwned"`
+	Metadata NFTMetadata `json:"metadata"`
+	Owner    string      `json:"owner"`
+	Type     string      `json:"type"` // "ERC1155", "ERC721", or "metaplex"
 }
 
-// NFTMetadata represents NFT metadata
+// NFTMetadata represents the metadata of an NFT
 type NFTMetadata struct {
-	Id          string         `json:"id"`
-	Uri         string         `json:"uri"`
-	Name        string         `json:"name"`
-	Description string         `json:"description"`
-	ExternalUrl string         `json:"external_url"`
-	Image       string         `json:"image,omitempty"` // Optional field
-	Attributes  []NFTAttribute `json:"attributes,omitempty"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
-
-// NFTAttribute represents NFT attribute
-type NFTAttribute struct {
-	TraitType string      `json:"trait_type"`
-	Value     any `json:"value"`
-}
-
-// WalletService handles wallet operations
-type WalletService struct {
-	secretKey string
-}
-
-// NewWalletService creates a new wallet service instance
-func NewWalletService() *WalletService {
-	return &WalletService{
-		secretKey: os.Getenv("SECRET_KEY"),
-	}
-}
-
