@@ -47,3 +47,15 @@ type NFTMetadata struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
+
+// CreateWalletRequest represents the request to create a new wallet
+type CreateWalletRequest struct {
+	Type string `json:"type"`
+}
+
+// CreateWalletResponse represents the response from wallet creation
+type CreateWalletResponse struct {
+	WalletAddress string `json:"walletAddress"`
+	Status        string `json:"status"`
+	Message       string `json:"message"`
+}

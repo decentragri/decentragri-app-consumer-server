@@ -21,6 +21,39 @@ func NewWalletService() *WalletService {
 	}
 }
 
+// CreateWallet creates a new wallet using thirdweb's backend wallet API
+func (ws *WalletService) CreateWallet() (*CreateWalletResponse, error) {
+	url := fmt.Sprintf("%s/backend-wallet/create", config.EngineCloudBaseURL)
+
+	reqBody := CreateWalletRequest{
+		Type: "smart:local",
+	}
+
+	req := fiber.Post(url)
+	req.Set("Content-Type", "application/json")
+	req.Set("Authorization", fmt.Sprintf("Bearer %s", ws.secretKey))
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("error marshalling request: %v", err)
+	}
+	req.Body(bodyBytes)
+
+	status, body, errs := req.Bytes()
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("error making request: %v", errs[0])
+	}
+	if status < 200 || status >= 300 {
+		return nil, fmt.Errorf("API request failed with status %d: %s", status, string(body))
+	}
+
+	var response CreateWalletResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("error parsing response: %v", err)
+	}
+
+	return &response, nil
+}
+
 // GetBalance fetches native token balance using Fiber client
 func GetBalance(chainID, walletAddress string) (BalanceResponse, error) {
 	url := fmt.Sprintf("%s/backend-wallet/%s/get-balance?walletAddress=%s",
