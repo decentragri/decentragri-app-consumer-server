@@ -1,22 +1,6 @@
 # Decentragri App CX Server
 
-A high-performance Go-based REST API server for the Decentragri platform, providing authentication, wallet management, marketplace functionality, and portfolio services for blockchain-based agricultural NFTs.
-
-## Features
-
-- **Multi## Team
-
-### Paul Anthony Arriola – CEO & Founder
-
-Paul Anthony Arriola brings over 5 years of experience in mobile app development and Web3 integrations. He holds a degree in Biology-Biotechnology and is the founder of GMetarave: Beats, a Web3-powered KPOP rhythm game that recently completed its alpha testing.
-
-After years of living in the city, Paul moved back to the countryside of Camarines Sur, Philippines, where he became a farm owner. Experiencing firsthand how underserved local farmers are, he was inspired to build DecentrAgri alongside his former college peers. Combining his background in biotechnology, technical expertise, and entrepreneurial experience, Paul is well-positioned to drive the deployment of innovative Web3 technologies in agriculture and empower farming communities.
-
-### Khyle Mara de Jesus Santos – Co-Founder & CTO
-
-Khyle Mara de Jesus Santos brings a strong foundation in computer science and software engineering with extensive experience in full-stack development and blockchain technologies. As a fellow alumnus and technical co-founder, she has been instrumental in architecting DecentrAgri's robust platform infrastructure and smart contract integrations.
-
-Having witnessed the technological gap in traditional farming during her academic research projects, Khyle recognized the transformative potential of blockchain technology in revolutionizing agricultural practices. Her expertise in distributed systems, database management, and API development has been crucial in building DecentrAgri's scalable backend architecture. With her deep understanding of both traditional software engineering principles and emerging Web3 technologies, Khyle ensures that DecentrAgri's platform remains technically sound, secure, and capable of serving farming communities at scale.
+A high-performance Go-based REST API server for the Decentragri Consumer platform, providing authentication, wallet management, marketplace functionality, and portfolio services for blockchain-based agricultural NFTs.
 
 **Core Technologies:**
 - **Backend Development**: Go, Node.js, distributed systems architecture
