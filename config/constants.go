@@ -2,7 +2,7 @@ package config
 
 // Blockchain network configuration
 const (
-	CHAIN = "8453" //BASE
+	CHAIN = "421614" //Arbitrum Sepolia
 	FarmPlotContractAddress = "0x3a981F929b06a44F739C8832e030bEF3881742dc"
 	AdminWallet = "0xE37D4e372c004ff76c1415d3C711B7dD1BbCCCeB"
 	DAGRIContractAddress = "0xF21C7E1DC1dB0903C2A4BC015A9825081682D448"

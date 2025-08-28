@@ -288,7 +288,7 @@ func (ws *WalletService) GetUserBalances(token string) (*UserBalances, error) {
 		return nil, fmt.Errorf("invalid or expired token: %w", err)
 	}
 
-	// Use hardcoded chain ID for consistency (8453 = Base)
+	// Use hardcoded chain ID for consistency (421614 = Arb Sepolia)
 	chainID := config.CHAIN
 	chainInt, err := strconv.Atoi(chainID)
 	if err != nil {

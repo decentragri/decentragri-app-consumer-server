@@ -73,7 +73,7 @@ SECRET_KEY=your_thirdweb_secret_key
 ENGINE_CLOUD_BASE_URL=https://your-engine-url
 
 # Blockchain
-CHAIN=8453  # Base chain ID
+CHAIN=421614  # Arb Sepolia chain ID
 FARM_PLOT_CONTRACT_ADDRESS=0x...
 DAGRI_CONTRACT_ADDRESS=0x...
 ```
