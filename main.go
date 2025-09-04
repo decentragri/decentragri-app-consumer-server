@@ -18,9 +18,9 @@ import (
 	memgraph "decentragri-app-cx-server/db"
 	"decentragri-app-cx-server/routes"
 	"log"
-	"runtime"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 )
 
@@ -35,76 +35,38 @@ import (
 //
 // The server will panic if it fails to start, ensuring no partial initialization states.
 func main() {
-	// Configure the Go runtime to use all available CPU cores for maximum performance.
-	// This enables concurrent processing of HTTP requests and background tasks.
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	log.Printf("Server configured to use %d CPU cores for optimal performance", runtime.NumCPU())
-
-	// Load environment variables from .env file for configuration.
-	// This includes database credentials, API keys, and other sensitive configuration.
-	// The server will continue with system environment variables if .env file is not found.
 	if err := godotenv.Load(); err != nil {
 		log.Println("Warning: Could not load .env file, using system environment variables:", err)
 	} else {
 		log.Println("Environment variables loaded successfully")
 	}
 
-	// Initialize Memgraph database connection for graph-based data storage.
-	// Memgraph is used for storing user relationships, transaction history, and complex queries.
-	log.Println("Initializing Memgraph database connection...")
 	memgraph.InitMemGraph()
-	log.Println("Memgraph database connected successfully")
-
-	// Initialize Redis cache for session management and performance optimization.
-	// Redis is used for JWT token storage, API response caching, and temporary data.
-	log.Println("Initializing Redis cache...")
 	cache.InitRedis()
-	log.Println("Redis cache connected successfully")
 
-	// Create a new Fiber application instance with custom configuration for optimal performance.
 	app := fiber.New(fiber.Config{
 		AppName:      "Decentragri App CX Server", // Application identifier
 		ServerHeader: "Decentragri App CX Server", // HTTP server header
 		BodyLimit:    50 * 1024 * 1024,            // 50 MB request body limit for file uploads
-		IdleTimeout:  60,                          // 60 seconds idle timeout for connections
-		Prefork:      false,                       // Disabled for development (enable for production)
-		ReadTimeout:  30,                          // 30 seconds read timeout
-		WriteTimeout: 30,                          // 30 seconds write timeout
+		Prefork:      false,             
 	})
 
-	log.Println("Registering API routes...")
+	// Add CORS middleware
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "*", // Allow all origins for development
+		AllowHeaders:     "Origin,Content-Type,Accept,Authorization,X-Dev-Bypass-Token",
+		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
+		AllowCredentials: false, // Set to false when using wildcard origins
+	}))
 
-	// Register all API route groups with their respective middleware and handlers.
-	// Each route group handles a specific domain of functionality:
-
-	// Authentication routes: login, token refresh, user management
 	routes.AuthRoutes(app)
-	log.Println("  Authentication routes registered")
-
-	// Portfolio routes: NFT management, farm plot listings, user portfolios
 	routes.PortfolioRoutes(app)
-	log.Println("  Portfolio routes registered")
-
-	// Marketplace routes: buy/sell operations, featured properties, listings
 	routes.MarketplaceRoutes(app)
-	log.Println("  Marketplace routes registered")
-
-	// Wallet routes: balance queries, NFT ownership, wallet creation
 	routes.WalletRoutes(app)
-	log.Println("  Wallet routes registered")
-
-	// Farm routes: farm listings, user farms, farm management
 	routes.FarmRoutes(app)
-	log.Println("  Farm routes registered")
 
-	log.Println("All routes registered successfully")
-
-	// Start the HTTP server on port 9085.
-	// The server will listen for incoming requests and handle them concurrently.
-	// If the server fails to start (e.g., port already in use), the application will panic.
 	log.Println("Starting HTTP server on port 9085...")
 	log.Println("Server endpoints available at: http://localhost:9085")
-	log.Println("API documentation: Check README.md for available endpoints")
 
 	if err := app.Listen(":9085"); err != nil {
 		log.Fatalf("Failed to start server: %v", err)

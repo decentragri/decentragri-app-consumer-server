@@ -6,31 +6,32 @@ import (
 
 	memgraph "decentragri-app-cx-server/db"
 	marketplaceservices "decentragri-app-cx-server/marketplace.services"
-	tokenservices "decentragri-app-cx-server/token.services"
+
+	// tokenservices "decentragri-app-cx-server/token.services"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
 // GetFarmList fetches farms for a user, formats dates, and fetches image bytes.
-func GetFarmList(token string) ([]FarmList, error) {
+func GetFarmList() ([]FarmList, error) {
 	// Handle dev bypass token first
-	var username string
-	var err error
+	// var username string
+	// var err error
 
-	if token == "dev_bypass_authorized" {
-		fmt.Println("Dev bypass detected in farm service")
-		username = "0x984785A89BF95cb3d5Df4E45F670081944d8D547" // Treasury wallet for testing
-	} else {
-		// Standard JWT token verification
-		tokenService := tokenservices.NewTokenService()
-		username, err = tokenService.VerifyAccessToken(token)
-		if err != nil {
-			return nil, fmt.Errorf("token verification failed: %w", err)
-		}
-	}
+	// if token == "dev_bypass_authorized" {
+	// 	fmt.Println("Dev bypass detected in farm service")
+	// 	username = "0x984785A89BF95cb3d5Df4E45F670081944d8D547" // Treasury wallet for testing
+	// } else {
+	// 	// Standard JWT token verification
+	// 	tokenService := tokenservices.NewTokenService()
+	// 	username, err = tokenService.VerifyAccessToken(token)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("token verification failed: %w", err)
+	// 	}
+	// }
 
 	cypher := `
-        MATCH (u:User {username: $username})-[:OWNS]->(f:Farm)
+        MATCH (f:Farm)
         RETURN f.id as id, 
                f.farmName as farmName, 
                f.cropType as cropType, 
@@ -45,7 +46,7 @@ func GetFarmList(token string) ([]FarmList, error) {
                f.lng as lng
     `
 
-	records, err := memgraph.ExecuteRead(cypher, map[string]interface{}{"username": username})
+	records, err := memgraph.ExecuteRead(cypher, map[string]interface{}{})
 	if err != nil {
 		return []FarmList{}, fmt.Errorf("database query failed: %w", err)
 	}
@@ -69,10 +70,21 @@ func GetFarmList(token string) ([]FarmList, error) {
 		imageURL, _ := record.Get("image")
 		imageBytes := []byte{}
 		if s, ok := imageURL.(string); ok && s != "" {
-			img, err := marketplaceservices.FetchImageBytes(s)
-			if err == nil {
+			fmt.Printf("Fetching image for farm: %s, URL: %s\n", getString(record, "farmName"), s)
+			
+			// Convert IPFS URL to HTTP gateway URL if needed
+			httpURL := marketplaceservices.BuildIpfsUri(s)
+			fmt.Printf("Converted URL: %s\n", httpURL)
+			
+			img, err := marketplaceservices.FetchImageBytes(httpURL)
+			if err != nil {
+				fmt.Printf("Error fetching image bytes for URL %s: %v\n", httpURL, err)
+			} else {
 				imageBytes = img
+				fmt.Printf("Successfully fetched %d bytes for URL: %s\n", len(imageBytes), httpURL)
 			}
+		} else {
+			fmt.Printf("No image URL found for farm: %s\n", getString(record, "farmName"))
 		}
 
 		// Parse coordinates
