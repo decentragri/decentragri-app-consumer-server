@@ -93,6 +93,10 @@ func main() {
 	routes.WalletRoutes(app)
 	log.Println("  Wallet routes registered")
 
+	// Farm routes: farm listings, user farms, farm management
+	routes.FarmRoutes(app)
+	log.Println("  Farm routes registered")
+
 	log.Println("All routes registered successfully")
 
 	// Start the HTTP server on port 9085.

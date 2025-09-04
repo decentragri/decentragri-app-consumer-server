@@ -3,10 +3,15 @@
 A high-performance Go-based REST API server for the Decentragri Consumer platform, providing authentication, wallet management, marketplace functionality, and portfolio services for blockchain-based agricultural NFTs.
 
 **Core Technologies:**
+
 - **Backend Development**: Go, Node.js, distributed systems architecture
 - **Blockchain Integration**: Smart contracts, ThirdWeb Engine, Web3 APIs  
 - **Database Systems**: Graph databases (Memgraph), Redis caching
-- **Infrastructure**: Microservices, API design, performance optimizationPerformance**: Utilizes all available CPU cores for optimal performance
+- **Infrastructure**: Microservices, API design, performance optimization
+
+## Key Features
+
+- **High Performance**: Utilizes all available CPU cores for optimal performance
 - **JWT Authentication**: Secure token-based authentication system
 - **Wallet Management**: Create wallets, fetch balances for native and ERC20 tokens
 - **NFT Portfolio**: Manage and display farm plot NFTs with image fetching
@@ -15,9 +20,10 @@ A high-performance Go-based REST API server for the Decentragri Consumer platfor
 - **Database**: Memgraph integration for graph-based data storage
 - **Image Processing**: Concurrent image fetching with IPFS gateway support
 
-##  Architecture
+## Architecture
 
 ### Tech Stack
+
 - **Framework**: Fiber (Express-like web framework for Go)
 - **Database**: Memgraph (Graph database)
 - **Cache**: Redis
@@ -26,12 +32,14 @@ A high-performance Go-based REST API server for the Decentragri Consumer platfor
 - **Language**: Go 1.19+
 
 ### Project Structure
-```
+
+```text
 decentragri-app-cx-server/
 ├── auth.services/          # Authentication service and utilities
 ├── cache/                  # Redis cache management
 ├── config/                 # Configuration constants and settings
 ├── db/                     # Database connection and utilities
+├── farm.services/          # Farm management functionality
 ├── marketplace.services/   # Marketplace functionality
 ├── middleware/             # HTTP middleware (auth, logging)
 ├── portfolio.services/     # Portfolio management
@@ -43,15 +51,17 @@ decentragri-app-cx-server/
 └── README.md              # This file
 ```
 
-##  Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
+
 - Go 1.19 or higher
 - Redis server
 - Memgraph database
 - ThirdWeb Engine API access
 
 ### Environment Variables
+
 Create a `.env` file in the root directory:
 
 ```env
@@ -113,52 +123,64 @@ DAGRI_CONTRACT_ADDRESS=0x...
 
 The server will start on port `9085` by default.
 
-##  API Endpoints
+## API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/login` - User login
 - `POST /api/auth/refresh` - Refresh JWT token
 
 ### Wallet Operations
+
 - `POST /api/wallet/create` - Create a new smart wallet
 - `GET /api/wallet/balances` - Get user's token balances (native + DAGRI)
 - `GET /api/wallet/nfts/:contract` - Get owned NFTs from a contract
 
 ### Portfolio Management
+
 - `GET /api/portfolio/summary` - Get portfolio summary (NFT count)
 - `GET /api/portfolio/entire` - Get complete portfolio with images
 
+### Farm Management
+
+- `GET /api/farm/list` - Get user's farms with formatted dates and image bytes
+
 ### Marketplace
+
 - `GET /api/marketplace/valid-farmplots` - Get all valid farm plot listings
 - `GET /api/marketplace/featured-property` - Get featured property
 - `POST /api/marketplace/buy-from-listing` - Purchase from marketplace
 
-##  Configuration
+## Configuration
 
 ### Server Configuration
+
 The server is configured in `main.go` with the following settings:
+
 - **Port**: 9085
 - **Body Limit**: 50MB
 - **Idle Timeout**: 60 seconds
 - **Multi-core**: Utilizes all available CPU cores
 
 ### Caching Strategy
+
 - **Images**: Cached for 1 hour
 - **Portfolio Data**: Cached for 3 minutes
 - **Token Balances**: No caching (real-time data)
 
 ### Concurrency Limits
+
 - **Image Fetching**: Maximum 20 concurrent requests per operation
 - **API Requests**: No artificial limits (handled by Fiber)
 
-## ecurity Features
+## Security Features
 
 - **JWT Authentication**: All protected routes require valid JWT tokens
 - **Token Validation**: Automatic token expiry and refresh mechanism
 - **Input Validation**: Request validation and sanitization
 - **Rate Limiting**: Built-in protection against abuse
 
-##  Performance Optimizations
+## Performance Optimizations
 
 - **Multi-core Processing**: Utilizes all CPU cores
 - **Concurrent Operations**: Goroutines for image fetching and I/O operations
@@ -169,6 +191,7 @@ The server is configured in `main.go` with the following settings:
 ## Error Handling
 
 The server implements comprehensive error handling:
+
 - **Structured Logging**: Detailed request/response logging
 - **Graceful Failures**: Non-critical failures don't crash the server
 - **Error Recovery**: Automatic recovery from transient errors
@@ -177,17 +200,20 @@ The server implements comprehensive error handling:
 ## Development
 
 ### Running in Development Mode
+
 ```bash
 go run main.go
 ```
 
 ### Building for Production
+
 ```bash
 go build -o decentragri-server main.go
 ./decentragri-server
 ```
 
 ### Testing
+
 ```bash
 go test ./...
 ```
@@ -195,6 +221,7 @@ go test ./...
 ## 📝 API Response Formats
 
 ### Successful Response
+
 ```json
 {
   "data": {...},
@@ -272,6 +299,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 For support and questions:
+
 - Create an issue in this repository
 - Contact the development team
 - Check the documentation for common solutions
