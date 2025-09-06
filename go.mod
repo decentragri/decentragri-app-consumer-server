@@ -1,6 +1,6 @@
 module decentragri-app-cx-server
 
-go 1.24.5
+go 1.24
 
 require (
 	github.com/ethereum/go-ethereum v1.16.1

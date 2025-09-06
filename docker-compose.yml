@@ -9,7 +9,7 @@ services:
       - MEMGRAPH_URI=${NEO4J_URI}
       - MEMGRAPH_USERNAME=${NEO4J_USERNAME:-decentragri}
       - MEMGRAPH_PASSWORD=${NEO4J_PASSWORD}
-      - REDIS_ADDR=${REDIS_ADDR:-redis:6399}
+      - REDIS_ADDR=${REDIS_ADDR:-redis:6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - REDIS_DB=${REDIS_DB:-0}
       - SECRET_KEY=${SECRET_KEY}
@@ -53,4 +53,5 @@ volumes:
 
 networks:
   decentragri-network:
-    driver: bridge
+    external: true
+    name: decentragri-ai_decentragri-network
