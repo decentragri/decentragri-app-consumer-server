@@ -48,7 +48,7 @@ func main() {
 		AppName:      "Decentragri App CX Server", // Application identifier
 		ServerHeader: "Decentragri App CX Server", // HTTP server header
 		BodyLimit:    50 * 1024 * 1024,            // 50 MB request body limit for file uploads
-		Prefork:      false,             
+		Prefork:      false,
 	})
 
 	// Add CORS middleware

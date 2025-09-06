@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  decentragri-server:
+    build: .
+    ports:
+      - "9085:9085"
+    environment:
+      # Override these with your actual values
+      - PORT=:9085
+      - MEMGRAPH_URI=${MEMGRAPH_URI:-bolt+ssc://96.9.211.82:7690}
+      - MEMGRAPH_USERNAME=${MEMGRAPH_USERNAME:-decentragri}
+      - MEMGRAPH_PASSWORD=${MEMGRAPH_PASSWORD}
+      - REDIS_ADDR=${REDIS_ADDR:-redis:6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=${REDIS_DB:-0}
+      - SECRET_KEY=${SECRET_KEY}
+      - CLIENT_ID=${CLIENT_ID}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - ENGINE_URI=${ENGINE_URI:-https://engine.decentragri.com}
+      - ENGINE_ENCRYPTION_PASSWORD=${ENGINE_ENCRYPTION_PASSWORD}
+      - ENGINE_ACCESS_TOKEN=${ENGINE_ACCESS_TOKEN}
+      - DEV_BYPASS_TOKEN=${DEV_BYPASS_TOKEN}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WEATHER_API_KEY=${WEATHER_API_KEY}
+      - OKX_API_KEY=${OKX_API_KEY}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - SALT_ROUNDS=${SALT_ROUNDS:-10}
+      - ENGINE_ADMIN_WALLET_ADDRESS=${ENGINE_ADMIN_WALLET_ADDRESS}
+      - SERVER_WALLET_ADDRESS=${SERVER_WALLET_ADDRESS}
+      - VAULT_ADMIN_KEY=${VAULT_ADMIN_KEY}
+      - VAULT_ACCESS_TOKEN=${VAULT_ACCESS_TOKEN}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - SOIL_SCAN_NFT=${SOIL_SCAN_NFT}
+      - SENSOR_FEED_SERVICE_JWT=${SENSOR_FEED_SERVICE_JWT}
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - decentragri-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - decentragri-network
+
+volumes:
+  redis_data:
+
+networks:
+  decentragri-network:
+    driver: bridge

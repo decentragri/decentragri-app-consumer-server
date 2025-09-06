@@ -1,0 +1,46 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Test files
+*_test.go
+test/
+**/test_*.sh
+
+# Development files
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Build artifacts (will be built inside container)
+decentragri-app-cx-server
+main
+
+# Node modules (if any)
+node_modules/
+
+# Environment files (we'll copy .env specifically)
+.env.local
+.env.development
+.env.production
