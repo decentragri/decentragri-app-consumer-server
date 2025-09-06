@@ -7,10 +7,10 @@ services:
       - "9085:9085"
     environment:
       # Override these with your actual values
-      - PORT=:9085
+      - PORT=:9085n
       - MEMGRAPH_URI=${NEO4J_URI}
-      - MEMGRAPH_USERNAME=${NEO4J_URI_USERNAME:-decentragri}
-      - MEMGRAPH_PASSWORD=${NEO4J_URI_PASSWORD}
+      - MEMGRAPH_USERNAME=${NEO4J_USERNAME:-decentragri}
+      - MEMGRAPH_PASSWORD=${NEO4J_PASSWORD}
       - REDIS_ADDR=${REDIS_ADDR:-redis:6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - REDIS_DB=${REDIS_DB:-0}
