@@ -2,8 +2,10 @@ package farmservices
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
+	"decentragri-app-cx-server/cache"
 	memgraph "decentragri-app-cx-server/db"
 	marketplaceservices "decentragri-app-cx-server/marketplace.services"
 
@@ -176,7 +178,7 @@ func getString(record *neo4j.Record, key string) string {
 	return ""
 }
 
-// GetFarmScans fetches recent farm scans with pagination (plant scans and soil readings)
+// GetFarmScans fetches recent farm scans with pagination (plant scans and soil readings) - OPTIMIZED VERSION
 func GetFarmScans(farmName string, page, limit int) (*FarmScanResult, error) {
 	// Calculate offset for pagination
 	offset := (page - 1) * limit
@@ -187,6 +189,16 @@ func GetFarmScans(farmName string, page, limit int) (*FarmScanResult, error) {
 	}
 	if page <= 0 {
 		page = 1 // Default to first page
+	}
+
+	// Check cache first - cache key includes pagination params
+	cacheKey := fmt.Sprintf("farm_scans:%s:page_%d:limit_%d", farmName, page, limit)
+	var cachedResult FarmScanResult
+	if cache.Exists(cacheKey) {
+		err := cache.Get(cacheKey, &cachedResult)
+		if err == nil {
+			return &cachedResult, nil
+		}
 	}
 
 	// Query for plant scans with pagination - using the correct 'date' field
@@ -244,92 +256,112 @@ func GetFarmScans(farmName string, page, limit int) (*FarmScanResult, error) {
 		"limit":    limit,
 	}
 
-	// Execute plant scans query
-	plantScanRecords, err := memgraph.ExecuteRead(plantScansCypher, params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch plant scans: %w", err)
+	// OPTIMIZATION: Execute all 4 database queries concurrently using goroutines
+	var wg sync.WaitGroup
+	var plantScanRecords, soilReadingRecords, plantCountRecords, soilCountRecords []*neo4j.Record
+	var plantErr, soilErr, plantCountErr, soilCountErr error
+
+	wg.Add(4)
+
+	// Concurrent query execution
+	go func() {
+		defer wg.Done()
+		plantScanRecords, plantErr = memgraph.ExecuteRead(plantScansCypher, params)
+	}()
+
+	go func() {
+		defer wg.Done()
+		soilReadingRecords, soilErr = memgraph.ExecuteRead(soilReadingsCypher, params)
+	}()
+
+	go func() {
+		defer wg.Done()
+		plantCountRecords, plantCountErr = memgraph.ExecuteRead(plantScansCountCypher, map[string]interface{}{
+			"farmName": farmName,
+		})
+	}()
+
+	go func() {
+		defer wg.Done()
+		soilCountRecords, soilCountErr = memgraph.ExecuteRead(soilReadingsCountCypher, map[string]interface{}{
+			"farmName": farmName,
+		})
+	}()
+
+	wg.Wait()
+
+	// Check for errors
+	if plantErr != nil {
+		return nil, fmt.Errorf("failed to fetch plant scans: %w", plantErr)
+	}
+	if soilErr != nil {
+		return nil, fmt.Errorf("failed to fetch soil readings: %w", soilErr)
+	}
+	if plantCountErr != nil {
+		return nil, fmt.Errorf("failed to get plant scans count: %w", plantCountErr)
+	}
+	if soilCountErr != nil {
+		return nil, fmt.Errorf("failed to get soil readings count: %w", soilCountErr)
 	}
 
-	// Execute soil readings query
-	soilReadingRecords, err := memgraph.ExecuteRead(soilReadingsCypher, params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch soil readings: %w", err)
-	}
+	// OPTIMIZATION: Process plant scans with concurrent image fetching
+	plantScans := make([]PlantScanResult, len(plantScanRecords))
+	if len(plantScanRecords) > 0 {
+		var imageWg sync.WaitGroup
+		imageWg.Add(len(plantScanRecords))
 
-	// Get total counts for pagination
-	plantCountRecords, err := memgraph.ExecuteRead(plantScansCountCypher, map[string]interface{}{
-		"farmName": farmName,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get plant scans count: %w", err)
-	}
+		for i, record := range plantScanRecords {
+			go func(index int, rec *neo4j.Record) {
+				defer imageWg.Done()
+				
+				// Process date fields
+				rawDate, dateExists := rec.Get("date")
+				rawCreatedAt, _ := rec.Get("createdAt")
+				
+				var actualDateValue interface{}
+				if dateExists && rawDate != nil {
+					actualDateValue = rawDate
+				} else if rawCreatedAt != nil {
+					actualDateValue = rawCreatedAt
+				} else {
+					actualDateValue = nil
+				}
+				
+				createdAt := parseDate(actualDateValue)
+				formattedCreatedAt := ""
+				if !createdAt.IsZero() {
+					formattedCreatedAt = createdAt.Format("January 2, 2006 - 3:04pm")
+				} else {
+					formattedCreatedAt = "Date unavailable"
+				}
 
-	soilCountRecords, err := memgraph.ExecuteRead(soilReadingsCountCypher, map[string]interface{}{
-		"farmName": farmName,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get soil readings count: %w", err)
-	}
+				// Fetch image concurrently (this will use cache if available)
+				imageURI, _ := rec.Get("imageUri")
+				imageBytes := ByteArray{}
+				if s, ok := imageURI.(string); ok && s != "" {
+					httpURL := marketplaceservices.BuildIpfsUri(s)
+					if img, err := marketplaceservices.FetchImageBytes(httpURL); err == nil {
+						imageBytes = ByteArray(img)
+					}
+				}
 
-	// Process plant scans
-	plantScans := make([]PlantScanResult, 0, len(plantScanRecords))
-	for _, record := range plantScanRecords {
-		// Try the correct 'date' field first, then fallback to other possibilities
-		rawDate, dateExists := record.Get("date")
-		rawCreatedAt, _ := record.Get("createdAt")
-
-		// Use the first available date field
-		var actualDateValue interface{}
-		if dateExists && rawDate != nil {
-			actualDateValue = rawDate
-		} else if rawCreatedAt != nil {
-			actualDateValue = rawCreatedAt
-		} else {
-			actualDateValue = nil
+				plantScans[index] = PlantScanResult{
+					CropType:           getString(rec, "cropType"),
+					Note:               getString(rec, "note"),
+					CreatedAt:          createdAt,
+					FormattedCreatedAt: formattedCreatedAt,
+					ID:                 getString(rec, "id"),
+					Interpretation:     parsePlantScanInterpretation(rec, "interpretation"),
+					ImageURI:           getString(rec, "imageUri"),
+					ImageBytes:         imageBytes,
+				}
+			}(i, record)
 		}
 
-		// Parse the date
-		createdAt := parseDate(actualDateValue)
-
-		// Format with proper AM/PM format
-		formattedCreatedAt := ""
-		if !createdAt.IsZero() {
-			formattedCreatedAt = createdAt.Format("January 2, 2006 - 3:04pm")
-		} else {
-			formattedCreatedAt = "Date unavailable"
-		}
-
-		imageURI, _ := record.Get("imageUri")
-		imageBytes := ByteArray{}
-		if s, ok := imageURI.(string); ok && s != "" {
-			// Convert IPFS to HTTP if needed
-			httpURL := marketplaceservices.BuildIpfsUri(s)
-			fmt.Printf("[DEBUG] Fetching image for plant scan: %s -> %s\n", s, httpURL)
-
-			img, err := marketplaceservices.FetchImageBytes(httpURL)
-			if err == nil {
-				imageBytes = ByteArray(img)
-				fmt.Printf("[DEBUG] Successfully fetched %d bytes for plant scan\n", len(img))
-			} else {
-				fmt.Printf("[DEBUG] Failed to fetch image for plant scan: %v\n", err)
-			}
-		}
-
-		plantScan := PlantScanResult{
-			CropType:           getString(record, "cropType"),
-			Note:               getString(record, "note"),
-			CreatedAt:          createdAt,
-			FormattedCreatedAt: formattedCreatedAt,
-			ID:                 getString(record, "id"),
-			Interpretation:     parsePlantScanInterpretation(record, "interpretation"),
-			ImageURI:           getString(record, "imageUri"),
-			ImageBytes:         imageBytes,
-		}
-
-		plantScans = append(plantScans, plantScan)
+		imageWg.Wait()
 	}
 
-	// Process soil readings
+	// Process soil readings (no images, so sequential processing is fine)
 	soilReadings := make([]SensorReadingsWithInterpretation, 0, len(soilReadingRecords))
 	for _, record := range soilReadingRecords {
 		rawCreatedAt, _ := record.Get("createdAt")
@@ -423,11 +455,36 @@ func GetFarmScans(farmName string, page, limit int) (*FarmScanResult, error) {
 		HasPrevious: hasPrevious,
 	}
 
-	return &FarmScanResult{
+	result := &FarmScanResult{
 		PlantScans:   plantScans,
 		SoilReadings: soilReadings,
 		Pagination:   pagination,
-	}, nil
+	}
+
+	// Cache the result for 5 minutes to speed up subsequent requests
+	cache.Set(cacheKey, *result, 5*time.Minute)
+
+	return result, nil
+}
+
+// WarmFarmScansCache pre-loads farm scans data into cache for faster subsequent requests
+// This can be called periodically or after data updates to ensure cache is warm
+func WarmFarmScansCache(farmName string) error {
+	// Warm cache for common page/limit combinations
+	commonCombinations := []struct{ page, limit int }{
+		{1, 10}, // Most common: first page, 10 items
+		{1, 20}, // First page, 20 items
+		{2, 10}, // Second page, 10 items
+	}
+
+	for _, combo := range commonCombinations {
+		_, err := GetFarmScans(farmName, combo.page, combo.limit)
+		if err != nil {
+			return fmt.Errorf("failed to warm cache for page %d, limit %d: %w", combo.page, combo.limit, err)
+		}
+	}
+
+	return nil
 }
 
 // getFloat64 safely gets a float64 from record
