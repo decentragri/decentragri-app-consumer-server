@@ -9,8 +9,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func AuthRoutes(app *fiber.App) {
+func AuthRoutes(app *fiber.App, limiter fiber.Handler) {
 	authGroup := app.Group("/api")
+
+	// Apply rate limiting to auth routes
+	authGroup.Use(limiter)
 
 	//** WALLET AUTHENTICATION ROUTES **//
 	authGroup.Post("/auth/nonce", func(c *fiber.Ctx) error {

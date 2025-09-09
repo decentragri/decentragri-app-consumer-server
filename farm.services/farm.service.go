@@ -2,6 +2,7 @@ package farmservices
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -67,7 +68,7 @@ func GetFarmList() ([]FarmList, error) {
 		if !updatedAt.IsZero() {
 			formattedUpdatedAt = updatedAt.Format("January 2, 2006")
 		} else {
-			fmt.Printf("[DEBUG] Zero time detected for farm updatedAt, rawUpdatedAt: %v\n", rawUpdatedAt)
+			log.Printf("Zero time detected for farm updatedAt, rawUpdatedAt: %v", rawUpdatedAt)
 			formattedUpdatedAt = "Date unavailable"
 		}
 
@@ -78,7 +79,7 @@ func GetFarmList() ([]FarmList, error) {
 		if !createdAt.IsZero() {
 			formattedCreatedAt = createdAt.Format("January 2, 2006")
 		} else {
-			fmt.Printf("[DEBUG] Zero time detected for farm createdAt, rawCreatedAt: %v\n", rawCreatedAt)
+			log.Printf("Zero time detected for farm createdAt, rawCreatedAt: %v", rawCreatedAt)
 			formattedCreatedAt = "Date unavailable"
 		}
 
@@ -86,21 +87,18 @@ func GetFarmList() ([]FarmList, error) {
 		imageURL, _ := record.Get("image")
 		imageBytes := ByteArray{}
 		if s, ok := imageURL.(string); ok && s != "" {
-			fmt.Printf("Fetching image for farm: %s, URL: %s\n", getString(record, "farmName"), s)
+			log.Printf("Fetching image for farm: %s", getString(record, "farmName"))
 
 			// Convert IPFS URL to HTTP gateway URL if needed
 			httpURL := marketplaceservices.BuildIpfsUri(s)
-			fmt.Printf("Converted URL: %s\n", httpURL)
 
 			img, err := marketplaceservices.FetchImageBytes(httpURL)
 			if err != nil {
-				fmt.Printf("Error fetching image bytes for URL %s: %v\n", httpURL, err)
+				log.Printf("Error fetching image bytes for farm %s: %v", getString(record, "farmName"), err)
 			} else {
 				imageBytes = ByteArray(img)
-				fmt.Printf("Successfully fetched %d bytes for URL: %s\n", len(imageBytes), httpURL)
+				log.Printf("Successfully fetched %d bytes for farm: %s", len(imageBytes), getString(record, "farmName"))
 			}
-		} else {
-			fmt.Printf("No image URL found for farm: %s\n", getString(record, "farmName"))
 		}
 
 		// Parse coordinates
@@ -313,11 +311,11 @@ func GetFarmScans(farmName string, page, limit int) (*FarmScanResult, error) {
 		for i, record := range plantScanRecords {
 			go func(index int, rec *neo4j.Record) {
 				defer imageWg.Done()
-				
+
 				// Process date fields
 				rawDate, dateExists := rec.Get("date")
 				rawCreatedAt, _ := rec.Get("createdAt")
-				
+
 				var actualDateValue interface{}
 				if dateExists && rawDate != nil {
 					actualDateValue = rawDate
@@ -326,7 +324,7 @@ func GetFarmScans(farmName string, page, limit int) (*FarmScanResult, error) {
 				} else {
 					actualDateValue = nil
 				}
-				
+
 				createdAt := parseDate(actualDateValue)
 				formattedCreatedAt := ""
 				if !createdAt.IsZero() {

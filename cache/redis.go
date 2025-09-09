@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"time"
@@ -41,13 +42,13 @@ func InitRedis() {
 
 	_, err := RedisClient.Ping(ctx).Result()
 	if err != nil {
-		fmt.Printf("Warning: Failed to connect to Redis: %v\n", err)
-		fmt.Println("Server will continue without caching. Install and start Redis for optimal performance.")
+		log.Printf("Warning: Failed to connect to Redis: %v", err)
+		log.Println("Server will continue without caching. Install and start Redis for optimal performance.")
 		RedisClient = nil
 		return
 	}
 
-	fmt.Println("Connected to Redis successfully")
+	log.Println("Connected to Redis successfully")
 }
 
 // Set stores a value in Redis with expiration

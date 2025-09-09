@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"sync"
@@ -125,17 +126,16 @@ func GetAllValidFarmPlotListings(chainID, contractAddress string) (*FarmPlotDire
 				}
 			}
 
-			fmt.Printf("[DEBUG] Original image URI from NFT metadata: %s\n", imageURI)
+			log.Printf("Processing image for listing %s", listing.ID)
 
 			// Convert IPFS URI to HTTP URL if needed
 			httpURL := BuildIpfsUri(imageURI)
-			fmt.Printf("[DEBUG] HTTP URL after BuildIpfsUri: %s\n", httpURL)
 
 			// Fetch image bytes
 			imageBytes, err := FetchImageBytes(httpURL)
 			if err != nil {
 				// Log error but don't fail the entire request
-				fmt.Printf("Warning: Failed to fetch image for listing %s: %v\n", listing.ID, err)
+				log.Printf("Warning: Failed to fetch image for listing %s: %v", listing.ID, err)
 				return
 			}
 
@@ -196,14 +196,11 @@ func FetchImageBytes(imageURI string) ([]uint8, error) {
 }
 
 func BuildIpfsUri(ipfsURI string) string {
-	fmt.Printf("[DEBUG] BuildIpfsUri input: %s\n", ipfsURI)
-
 	clientID := os.Getenv("CLIENT_ID")
 	if clientID == "" {
 		// Fallback to the new client ID if environment variable is not set
 		clientID = "758a938bc85320ceb23c40418e01618a"
 	}
-	fmt.Printf("[DEBUG] Using CLIENT_ID: %s\n", clientID)
 
 	// Check if this is already an HTTPS URL with ipfscdn.io pattern
 	if strings.HasPrefix(ipfsURI, "https://") && strings.Contains(ipfsURI, ".ipfscdn.io/ipfs/") {
@@ -214,14 +211,12 @@ func BuildIpfsUri(ipfsURI string) string {
 			existingClientID := ipfsURI[start:end]
 			// Replace the existing client ID with the new one
 			updatedURL := strings.Replace(ipfsURI, existingClientID+".ipfscdn.io", clientID+".ipfscdn.io", 1)
-			fmt.Printf("[DEBUG] Replaced client ID '%s' with '%s', result: %s\n", existingClientID, clientID, updatedURL)
 			return updatedURL
 		}
 	}
 
 	// Handle regular HTTP/HTTPS URLs that don't match the ipfscdn pattern
 	if strings.HasPrefix(ipfsURI, "http://") || strings.HasPrefix(ipfsURI, "https://") {
-		fmt.Printf("[DEBUG] HTTP URL unchanged: %s\n", ipfsURI)
 		return ipfsURI
 	}
 
@@ -229,11 +224,9 @@ func BuildIpfsUri(ipfsURI string) string {
 	if strings.HasPrefix(ipfsURI, "ipfs://") {
 		ipfsHash := strings.TrimPrefix(ipfsURI, "ipfs://")
 		result := fmt.Sprintf("https://%s.ipfscdn.io/ipfs/%s", clientID, ipfsHash)
-		fmt.Printf("[DEBUG] Converted IPFS URI to: %s\n", result)
 		return result
 	}
 
 	// If it doesn't match any expected format, return as is
-	fmt.Printf("[DEBUG] Unknown URI format, returning unchanged: %s\n", ipfsURI)
 	return ipfsURI
 }

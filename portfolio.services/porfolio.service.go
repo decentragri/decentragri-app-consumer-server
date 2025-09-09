@@ -25,6 +25,7 @@ import (
 	"decentragri-app-cx-server/config"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -443,16 +444,15 @@ func ConvertNFTsWithImages(nftItems []walletServices.NFTItem) ([]NFTItemWithImag
 				return
 			}
 
-			fmt.Printf("[DEBUG] Original image URI from NFT metadata: %s\n", imageURI)
+			log.Printf("Processing image for NFT %s", nftItem.Metadata.ID)
 
 			// Convert IPFS URI to HTTP URL if needed
 			httpURL := BuildIpfsUri(imageURI)
-			fmt.Printf("[DEBUG] HTTP URL after BuildIpfsUri: %s\n", httpURL)
 
 			// Fetch image bytes
 			imageBytes, err := FetchImageBytes(httpURL)
 			if err != nil {
-				fmt.Printf("Warning: Failed to fetch image for NFT %s: %v\n", nftItem.Metadata.ID, err)
+				log.Printf("Warning: Failed to fetch image for NFT %s: %v", nftItem.Metadata.ID, err)
 				return
 			}
 
@@ -597,8 +597,6 @@ func FetchImageBytes(imageURI string) ([]uint8, error) {
 //   - QmHash123 → https://ipfs.io/ipfs/QmHash123
 //   - https://example.com/image.png → https://example.com/image.png (unchanged)
 func BuildIpfsUri(ipfsURI string) string {
-	fmt.Printf("BuildIpfsUri input: %s\n", ipfsURI)
-
 	// Handle empty input gracefully
 	if ipfsURI == "" {
 		return ""

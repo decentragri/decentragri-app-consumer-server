@@ -58,12 +58,13 @@ import (
 //   - Automatic wallet address extraction from tokens
 //   - Request authentication status logging
 //   - Protected resource access control
-func WalletRoutes(app *fiber.App) {
+func WalletRoutes(app *fiber.App, limiter fiber.Handler) {
 	// Initialize wallet service for handling wallet operations
 	walletService := walletServices.NewWalletService()
 
-	// Create wallet API route group with authentication middleware
+	// Create wallet API route group with rate limiting and authentication middleware
 	wallet := app.Group("/api/wallet")
+	wallet.Use(limiter)
 	wallet.Use(middleware.AuthMiddleware())
 
 	// POST /api/wallet/create - Create new smart wallet

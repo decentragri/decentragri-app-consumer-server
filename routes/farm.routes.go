@@ -1,60 +1,60 @@
 package routes
 
 import (
-	"fmt"
-	"strconv"
+	"log"
 
 	farmservices "decentragri-app-cx-server/farm.services"
-	// "decentragri-app-cx-server/middleware"
+	"decentragri-app-cx-server/utils"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func FarmRoutes(app *fiber.App) {
-	farmGroup := app.Group("/api")
+func FarmRoutes(app *fiber.App, limiter fiber.Handler) {
+	api := app.Group("/api")
 
-	// Apply auth middleware to all farm routes
-	// farmGroup.Use(middleware.AuthMiddleware())
+	// Apply rate limiting to farm routes
+	api.Use(limiter)
+
+	// Define farm group for farm-specific routes
+	farmGroup := api.Group("/farm")
 
 	// GET /api/farm/list - Get user's farms with formatted dates and image bytes
-	farmGroup.Get("/farm/list", func(c *fiber.Ctx) error {
+	farmGroup.Get("/list", func(c *fiber.Ctx) error {
 		// token := middleware.ExtractToken(c)
 
-		fmt.Printf("Received farm list request with token\n")
+		log.Println("Processing farm list request")
 
 		response, err := farmservices.GetFarmList()
 		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+			log.Printf("Error fetching farm list: %v", err)
+			return utils.HandleInternalError(c, err, "fetching farm list")
 		}
 
 		return c.JSON(response)
 	})
 
 	// GET /api/farm/scans/:farmName - Get recent farm scans with pagination
-	farmGroup.Get("/farm/scans/:farmName", func(c *fiber.Ctx) error {
-		farmName := c.Params("farmName")
+	farmGroup.Get("/scans/:farmName", func(c *fiber.Ctx) error {
+		farmName := utils.SanitizeInput(c.Params("farmName"))
 
-		// Get pagination parameters from query string
-		page := 1
-		limit := 10
-
-		if pageStr := c.Query("page"); pageStr != "" {
-			if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
-				page = p
-			}
+		// Validate farm name input
+		if !utils.ValidateFarmName(farmName) {
+			log.Printf("Invalid farm name provided: %s", farmName)
+			return utils.HandleValidationError(c, "farmName")
 		}
 
-		if limitStr := c.Query("limit"); limitStr != "" {
-			if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 { // Max 100 items per page
-				limit = l
-			}
+		// Get pagination parameters with validation
+		page, limit, err := utils.ValidatePagination(c.Query("page"), c.Query("limit"))
+		if err != nil {
+			return utils.HandleValidationError(c, err.Error())
 		}
 
-		fmt.Printf("Received farm scans request for farm: %s, page: %d, limit: %d\n", farmName, page, limit)
+		log.Printf("Processing farm scans request for farm: %s, page: %d, limit: %d", farmName, page, limit)
 
 		response, err := farmservices.GetFarmScans(farmName, page, limit)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			log.Printf("Error fetching farm scans: %v", err)
+			return utils.HandleInternalError(c, err, "fetching farm scans")
 		}
 
 		return c.JSON(response)

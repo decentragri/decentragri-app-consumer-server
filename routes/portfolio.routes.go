@@ -9,10 +9,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func PortfolioRoutes(app *fiber.App) {
-	portfolioGroup := app.Group("/api/portfolio")
+func PortfolioRoutes(app *fiber.App, limiter fiber.Handler) {
+	api := app.Group("/api")
 
-	// Apply auth middleware to all portfolio routes
+	// Apply rate limiting to portfolio routes
+	api.Use(limiter)
+
+	// Protected portfolio group requiring authentication
+	portfolioGroup := api.Group("/portfolio")
 	portfolioGroup.Use(middleware.AuthMiddleware())
 
 	portfolioGroup.Get("/summary", func(c *fiber.Ctx) error {
@@ -28,7 +32,6 @@ func PortfolioRoutes(app *fiber.App) {
 
 		return c.JSON(response)
 	})
-
 
 	portfolioGroup.Get("/entire", func(c *fiber.Ctx) error {
 		token := middleware.ExtractToken(c)

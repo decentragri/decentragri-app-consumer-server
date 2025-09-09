@@ -9,10 +9,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func MarketplaceRoutes(app *fiber.App) {
-	group := app.Group("/api/marketplace")
+func MarketplaceRoutes(app *fiber.App, limiter fiber.Handler) {
+	api := app.Group("/api")
 
-	// Apply auth middleware to all marketplace routes
+	// Apply rate limiting to marketplace routes
+	api.Use(limiter)
+
+	// Protected marketplace group requiring authentication
+	group := api.Group("/marketplace")
 	group.Use(middleware.AuthMiddleware())
 
 	// GET /api/marketplace/valid-farmplots
